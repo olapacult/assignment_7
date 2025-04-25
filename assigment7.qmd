@@ -1,0 +1,97 @@
+---
+title: "assignment 7"
+format: html
+editor: visual
+---
+
+## Assignment 7
+
+**Exploring the Iris Dataset with tidyr and dplyr.**
+
+## TASK 1
+
+At the beginning I had to install packages:
+
+```{r}
+install.packages("tidyr")
+install.packages("dplyr")
+```
+
+I used the `head()` function to preview the first few rows of the *iris* dataset, which helped me understand its structure before converting it to long format.
+
+```{r}
+library(tidyr)
+library(dplyr)
+
+head(iris)
+```
+
+There I transfomed iris dataset to long format using function pivot_longer. The first argument are the numbers of columns I want to pivot into a longer format. In this case, columns 1 to 4, which correspond to the measurements of the sepal and petal. A `names_to = "Trait"` creats new column called **`Trait`** containing the *names* of those four columns. A new column called **`Size`** containing the *values* from those columns.
+
+```{r}
+iris_long <- iris %>% 
+  pivot_longer(1:4,names_to = "Trait", values_to = "Size")
+
+head(iris_long)
+```
+
+## TASK 2.1
+
+Code below **c**alculates the average (mean) measurement for each trait and each species in the `iris_long` dataset.
+
+At the beginning I group by Species and Trait. This grouping is important because I can summarize values **within each group**.
+
+`summarise(mean_size = mean(Size), .groups = "drop")` creats a summary for each group. It calculates the **mean** of the `Size` values (i.e., the average measurement). The result is saved in a new column called **`mean_size`**. `.groups = "drop"` tells R not to keep the grouping structure in the final result.
+
+```{r}
+iris_long_mean <- iris_long %>% group_by(Species,Trait) %>% summarise(mean_size = mean(Size), .groups = "drop")
+iris_long_mean
+
+```
+
+What is the **mean, length** and **width** of the **sepal** and **petal** of each species?
+
+## **TASK 2.2**
+
+-   `filter(Species %in% c("virginica", "versicolor"))` keeps **only the rows** where the species is either `"virginica"` or `"versicolor" s`o all `"setosa"` rows are **excluded**.
+
+-   `group_by(Species, Trait)` I grouped the filtered data by
+
+    -   `Species` (virginica or versicolor)
+
+    -   `Trait` (e.g., Sepal.Length, Petal.Width, etc.)
+
+-   `summarise(max_size = max(Size), .groups = "drop")` it calculates for each group the **maximum** value of `Size` (the trait measurement) and stores the result in a new column called `max_size`.
+
+```{r}
+iris_long %>%
+  filter(Species %in% c("virginica", "versicolor")) %>%
+  group_by(Species, Trait) %>%
+  summarise(max_size = max(Size), .groups = "drop")
+
+```
+
+## **TASK 2.3**
+
+I j**oined two data frames** — `iris_long` and `iris_long_mean` — together using a **left join**, based on the columns `Species` and `Trait`. It this way I got a dataframe with new coulmn - `mean_size`.
+
+```{r}
+iris_long_new <- left_join(iris_long, iris_long_mean , by = c("Species", "Trait"))
+iris_long_new 
+
+```
+
+This code calculates, **for each species and trait**, how many measurements are **greater than the average (mean)** value for that trait and species.
+
+-   `filter(Size > mean_size)` this keeps **only those rows** where the measurement (`Size`) is **greater than the mean** for that trait/species.
+
+-   `group_by(Species, Trait)` I group the filtered data by: `Species` (e.g., setosa, versicolor, virginica) and `Trait` (e.g., Sepal.Width, Petal.Length)
+
+-   `summarise(number_of_observations = n())` - `summarise()` creates a summary for each group and `n()` counts how many rows (observations) are in each group
+
+```{r}
+iris_long_new %>% filter(Size > mean_size) %>% 
+  group_by(Species, Trait) %>%
+  summarise(number_of_observations = n())
+  
+```
